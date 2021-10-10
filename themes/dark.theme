@@ -1,0 +1,18 @@
+{
+    "background": "#272c35",
+    "foreground": "#ffffff",
+    "keywordColor": "#cca8ec",
+    "commentColor": "#8fcb71",
+    "marginColor": "#1f232a",
+    "quotesColor": "#8fcb71",
+    "itemSelection": ["255", "255", "255", "60"],
+    "mouseSelection": [255, 255, 255, 60],
+    "marginForeground": "#3f4757",
+    "matchedBrace": "#424a59",
+    "unmatchedBrace": "#593f4f",
+    "matchedBraceFore": "#ffffff",
+    "unmatchedBraceFore": "#ffffff",
+    "caretColor": "#528bff",
+    "caretWidth": 2,
+    "brackColor": "#ABB2BF"
+}
