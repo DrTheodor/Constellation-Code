@@ -12,13 +12,14 @@ class QsciScintilla;
 class QsciAbstractAPIs;
 class list;
 class Discord;
+class QSharedMemory;
 
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
 public:
-    MainWindow();
+    MainWindow(char **argv);
     void insertText(const QString &text);
     QFont standardFont;
     QFont commentFont;
@@ -40,8 +41,12 @@ public:
            QColor brackColor;
            bool commentItalic;
            short caretWidth;
+           QColor numColor;
     };
     ThemeStructure Theme; 
+    void loadFile(const QString &fileName = 0);
+    void openByProtocol();
+
 
 
 protected:
@@ -77,7 +82,6 @@ private:
     void FoldAll();
     void ToggleFoldRecursive(int line, int level);
     void EnsureAllChildrenVisible(int line, int level);
-    void loadFile(const QString &fileName = 0);
     bool saveFile(const QString &fileName = 0, int index = 0);
     void setCurrentFile(const QString &fileName);
     QString strippedName(const QString &fullFileName);
@@ -111,6 +115,8 @@ private:
     QAction *discordRPCAct;
 
     Discord *discord;
+
+    char **args;
 
 };
 

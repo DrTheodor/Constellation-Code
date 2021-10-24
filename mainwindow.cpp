@@ -18,6 +18,7 @@
 #include <QJsonDocument>
 #include <QJsonArray>
 #include <QProcess>
+#include <QSharedMemory>
 
 #include <Qsci/qsciscintilla.h>
 #include <Qsci/qscilexercsharp.h>
@@ -30,7 +31,7 @@
 
 static const int MARGIN_SCRIPT_FOLD_INDEX = 2;
 
-MainWindow::MainWindow()
+MainWindow::MainWindow(char **argv)
 {
     textEdit = new QsciScintilla;
     tabControl = new QTabWidget;
@@ -47,7 +48,6 @@ MainWindow::MainWindow()
     connect(tabControl, &QTabWidget::currentChanged, this, &MainWindow::onTabChanged);
     connect(tabControl, &QTabWidget::tabCloseRequested, this, &MainWindow::onTabClose);
 
-    tabControl->addTab(createTextEdit(), "New File");
     tabControl->setTabsClosable(true);
     tabControl->setContentsMargins(0,0,0,0);
     tabControl->setMovable(true);
@@ -56,7 +56,13 @@ MainWindow::MainWindow()
     settingsWindow = new SettingsWindow();
 
     discord->SetupDiscord();
+
+    args = argv;
+
+    openByProtocol();
+
 }
+
 
 void MainWindow::onMargin(int position, int modifiers)
 {
@@ -73,6 +79,15 @@ void MainWindow::onTabChanged()
             setWindowTitle(tr("New File[*] - %2").arg(tr("Constellation Code")));
         }
         setWindowModified(tabControl->currentWidget()->isWindowModified());
+    }
+}
+
+void MainWindow::openByProtocol()
+{
+    if(!QString(args[1]).isEmpty()) {
+        loadFile(QString(args[1]));
+    } else {
+        tabControl->addTab(createTextEdit(), "New File");
     }
 }
 
@@ -93,11 +108,12 @@ void MainWindow::setupTheme(QString name)
     QColor selectedTabColor = QColor(json.value("selectedTabColor").toString());
     QColor menuForeColor = QColor(json.value("menuForeColor").toString());
     QColor marginColor = QColor(json.value("marginColor").toString());
+    QColor backgroundColor = QColor(json.value("background").toString());
 
     Theme = ThemeStructure {
             .mouseSelection = { mouseSelection[0].toInt(), mouseSelection[1].toInt(), mouseSelection[2].toInt(), mouseSelection[3].toInt() },
             .caretLineColor = QColor(caretLineColor[0].toInt(), caretLineColor[1].toInt(), caretLineColor[2].toInt(), caretLineColor[3].toInt()),
-            .background = QColor(json.value("background").toString()),
+            .background = backgroundColor,
             .marginColor = marginColor,
             .foreground = QColor(json.value("foreground").toString()),
             .commentColor = QColor(json.value("commentColor").toString()),
@@ -112,6 +128,7 @@ void MainWindow::setupTheme(QString name)
             .brackColor = QColor(json.value("brackColor").toString()),
             .commentItalic = json.value("commentItalic").toBool(true),
             .caretWidth = (short)json.value("caretWidth").toInt(2),
+            .numColor = QColor(json.value("numColor").toString())
     };
 
     qApp->setStyleSheet(tr(
@@ -126,10 +143,16 @@ void MainWindow::setupTheme(QString name)
     "QTabWidget::pane { margin: 0px; padding: 0px; }"
     "QTabBar::close-button { image: url(:/images/close.png); }"
     "QWidget { background: %1; color: %2; }"
-    "QPushButton { border-radius: 2px; border: 0.5px solid rgba(%3,%4,%5,%6); }"
+    "QPushButton { border-radius: 2px; border: 0.5px solid rgba(%3,%4,%5,%6); min-height: 15px; min-width: 50px; background: %10 }"
     "QPushButton:pressed { background: rgba(%3,%4,%5,%6); border-radius: 2px; }"
     "QListWidget::item:hover { background: rgba(%3,%4,%5,%6); }"
     "QListWidget::item:selected, QListView::item:selected { color: %2; background: rgba(%3,%4,%5,%6); }"
+    "QScrollBar:vertical { border: none; background-color: %1; min-height: 30px; width: 5px; }"
+    "QScrollBar::handle:vertical { background-color: %1; }"
+    "QScrollBar::handle:vertical:hover { background-color: rgba(%3,%4,%5,%6); border-radius: 1px; }"
+    "QScrollBar::sub-line:vertical { background: none; }"
+    "QScrollBar::add-line:vertical { background: none; }"
+    "QScrollBar::up-arrow:vertical, QScrollBar::down-arrow:vertical { background: none; }"
     "QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: none; }")
             .arg(marginColor.name())
             .arg(menuForeColor.name())
@@ -139,7 +162,8 @@ void MainWindow::setupTheme(QString name)
             .arg(itemSelection[3].toString())
             .arg(tabColor.name())
             .arg(menuForeColor.name())
-            .arg(selectedTabColor.name()));
+            .arg(selectedTabColor.name())
+            .arg(backgroundColor.name()));
 
     standardFont = QFont("JetBrains Mono", 10.0, 50);
     commentFont = standardFont;
@@ -224,7 +248,7 @@ QWidget* MainWindow::createTextEdit()
     lex->setColor(Theme.quotesColor, 7);
     lex->setColor(Theme.quotesColor, 6);
     lex->setColor(Theme.keywordColor, 5);
-    lex->setColor(Theme.keywordColor, 4);
+    lex->setColor(Theme.numColor, 4);
     lex->setColor(Theme.quotesColor, 3);
     lex->setColor(Theme.commentColor, 2);
     lex->setColor(Theme.commentColor, 1);
@@ -699,4 +723,5 @@ void MainWindow::insertText(const QString &text)
 {
     textEdit->insert(text);
 }
+
 

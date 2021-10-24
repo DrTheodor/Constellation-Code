@@ -1,8 +1,9 @@
-QT       += core gui
+QT       += core gui network
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 CONFIG += c++11 qscintilla2
+
 
 RC_ICONS = images/logo.ico
 
@@ -10,6 +11,8 @@ VERSION = 1.0.0
 QMAKE_TARGET_COMPANY = MineLines
 QMAKE_TARGET_PRODUCT = Constellation Code
 QMAKE_TARGET_DESCRIPTION = Constellation Code is a lightweight code editor for Unity
+
+DEFINES += QAPPLICATION_CLASS=QApplication
 
 HEADERS      = mainwindow.h \
     DiscordSDK/include/discord_register.h \
@@ -57,6 +60,8 @@ HEADERS      = mainwindow.h \
     DiscordSDK/src/serialization.h \
     csharpapi.h \
     discord.h \
+    protocol/singleapplication.h \
+    protocol/singleapplication_p.h \
     settingswindow.h \
     templatewindow.h
 SOURCES      = main.cpp mainwindow.cpp \
@@ -69,6 +74,8 @@ SOURCES      = main.cpp mainwindow.cpp \
     DiscordSDK/src/serialization.cpp \
     csharpapi.cpp \
     discord.cpp \
+    protocol/singleapplication.cpp \
+    protocol/singleapplication_p.cpp \
     settingswindow.cpp \
     templatewindow.cpp
 
@@ -85,3 +92,8 @@ DISTFILES += \
     DiscordSDK/src/CMakeLists.txt \
     DiscordSDK/src/discord_register_osx.m \
     DiscordSDK/src/discord_register_osx.m
+
+win32 {
+    msvc:LIBS += Advapi32.lib
+    gcc:LIBS += -ladvapi32
+}
