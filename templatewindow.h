@@ -16,7 +16,7 @@ class TemplateWindow : public QMainWindow
 {
     Q_OBJECT
 public:
-    explicit TemplateWindow(MainWindow *mw);
+    explicit TemplateWindow();
     virtual ~TemplateWindow();
 
 private:

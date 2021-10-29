@@ -15,6 +15,7 @@ QMAKE_TARGET_DESCRIPTION = Constellation Code is a lightweight code editor for U
 DEFINES += QAPPLICATION_CLASS=QApplication
 
 HEADERS      = mainwindow.h \
+    Component.h \
     DiscordSDK/include/discord_register.h \
     DiscordSDK/include/discord_rpc.h \
     DiscordSDK/src/backoff.h \
@@ -58,12 +59,14 @@ HEADERS      = mainwindow.h \
     DiscordSDK/src/rapidjson/writer.h \
     DiscordSDK/src/rpc_connection.h \
     DiscordSDK/src/serialization.h \
+    Script.h \
     csharpapi.h \
     discord.h \
     protocol/singleapplication.h \
     protocol/singleapplication_p.h \
     settingswindow.h \
-    templatewindow.h
+    templatewindow.h \
+    scriptgenwindow.h
 SOURCES      = main.cpp mainwindow.cpp \
     DiscordSDK/src/connection_win.cpp \
     DiscordSDK/src/discord_register_linux.cpp \
@@ -77,13 +80,13 @@ SOURCES      = main.cpp mainwindow.cpp \
     protocol/singleapplication.cpp \
     protocol/singleapplication_p.cpp \
     settingswindow.cpp \
-    templatewindow.cpp
+    templatewindow.cpp \
+    scriptgenwindow.cpp
 
 
 RESOURCES    = application.qrc
 
-FORMS += \
-    settingswindow.ui
+FORMS +=
 
 DISTFILES += \
     Discord SDK/src/CMakeLists.txt \

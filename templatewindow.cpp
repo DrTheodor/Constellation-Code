@@ -10,12 +10,9 @@
 #include <QTextEdit>
 #include <QCheckBox>
 
-static MainWindow *mainw;
 
-TemplateWindow::TemplateWindow(MainWindow *mw)
+TemplateWindow::TemplateWindow()
 {
-    mainw = mw;
-
     qRegisterMetaTypeStreamOperators<QMap<QString,QString>>("templateList");
     readSettings();
     createUi();
@@ -27,7 +24,6 @@ TemplateWindow::TemplateWindow(MainWindow *mw)
 
 TemplateWindow::~TemplateWindow()
 {
-    delete mainw;
     delete window;
 }
 
@@ -104,7 +100,7 @@ void TemplateWindow::performAction()
         }
     } else {
         if(list->selectedItems().count() > 0) {
-             mainw->insertText(templateList[list->selectedItems()[0]->text()]);
+             MainWindow::getInstance()->insertText(templateList[list->selectedItems()[0]->text()]);
         }
     }
 }

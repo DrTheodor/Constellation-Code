@@ -18,7 +18,6 @@
 #include <QJsonDocument>
 #include <QJsonArray>
 #include <QProcess>
-#include <QSharedMemory>
 
 #include <Qsci/qsciscintilla.h>
 #include <Qsci/qscilexercsharp.h>
@@ -30,8 +29,9 @@
 #include "discord.h"
 
 static const int MARGIN_SCRIPT_FOLD_INDEX = 2;
+static MainWindow *_instance;
 
-MainWindow::MainWindow(char **argv)
+MainWindow::MainWindow()
 {
     textEdit = new QsciScintilla;
     tabControl = new QTabWidget;
@@ -52,15 +52,15 @@ MainWindow::MainWindow(char **argv)
     tabControl->setContentsMargins(0,0,0,0);
     tabControl->setMovable(true);
 
-    templateWindow = new TemplateWindow(this);
+    templateWindow = new TemplateWindow();
     settingsWindow = new SettingsWindow();
+    QString basePath = QCoreApplication::applicationDirPath();
+    scriptGenWindow = new ScriptGenWindow(&basePath);
 
     discord->SetupDiscord();
 
-    args = argv;
-
-    openByProtocol();
-
+    tabControl->addTab(createTextEdit(), "New File");
+    _instance = this;
 }
 
 
@@ -82,12 +82,20 @@ void MainWindow::onTabChanged()
     }
 }
 
-void MainWindow::openByProtocol()
+void MainWindow::openByProtocol(int instanceId, QByteArray message)
 {
-    if(!QString(args[1]).isEmpty()) {
-        loadFile(QString(args[1]));
-    } else {
-        tabControl->addTab(createTextEdit(), "New File");
+    if(message != nullptr) {
+        bool createTab = true;
+        for(int i = 0; i < tabControl->count(); i++) {
+            if(message == tabControl->widget(i)->objectName()) {
+                createTab = false;
+                tabControl->setCurrentIndex(i);
+                break;
+            }
+        }
+        if(createTab) {
+            loadFile(message);
+        }
     }
 }
 
@@ -111,7 +119,7 @@ void MainWindow::setupTheme(QString name)
     QColor backgroundColor = QColor(json.value("background").toString());
 
     Theme = ThemeStructure {
-            .mouseSelection = { mouseSelection[0].toInt(), mouseSelection[1].toInt(), mouseSelection[2].toInt(), mouseSelection[3].toInt() },
+            .mouseSelection = { (mouseSelection[0].toInt()), mouseSelection[1].toInt(), mouseSelection[2].toInt(), mouseSelection[3].toInt() },
             .caretLineColor = QColor(caretLineColor[0].toInt(), caretLineColor[1].toInt(), caretLineColor[2].toInt(), caretLineColor[3].toInt()),
             .background = backgroundColor,
             .marginColor = marginColor,
@@ -165,7 +173,7 @@ void MainWindow::setupTheme(QString name)
             .arg(selectedTabColor.name())
             .arg(backgroundColor.name()));
 
-    standardFont = QFont("JetBrains Mono", 10.0, 50);
+    standardFont = new QFont("JetBrains Mono", 10.0, 50);
     commentFont = standardFont;
 }
 
@@ -177,28 +185,22 @@ QWidget* MainWindow::createTextEdit()
     sci->setUtf8(true);
     sci->setLexer(lex);
 
-    //Text visual stuff
     sci->zoomTo(4);
-
     sci->setEdgeColumn(50);
 
-    //Wrapping
     sci->setWrapMode(QsciScintilla::WrapWord);
     sci->setWrapVisualFlags(QsciScintilla::WrapFlagByText);
     sci->setWrapIndentMode(QsciScintilla::WrapIndentSame);
 
-    //Indentation
     sci->setAutoIndent(true);
     sci->setIndentationGuides(false);
     sci->setIndentationsUseTabs(true);
     sci->setIndentationWidth(4);
     sci->setTabWidth(4);
 
-    //Margin stuff
     sci->setMarginLineNumbers(1, true);
     sci->setMarginWidth(1, 50);
 
-    //Code folding
     sci->SendScintilla(QsciScintilla::SCI_SETSTYLEBITS, 5);
 
     lex->setFoldComments(true);
@@ -219,7 +221,6 @@ QWidget* MainWindow::createTextEdit()
     sci->SendScintilla(QsciScintilla::SCI_SETFOLDFLAGS, 16);
     sci->SendScintilla(QsciScintilla::SCI_SETMARGINSENSITIVEN, MARGIN_SCRIPT_FOLD_INDEX, 1);
 
-    //Autocomplete
     sci->setAutoCompletionSource(QsciScintilla::AcsAll);
     sci->setAutoCompletionCaseSensitivity(true);
     sci->setAutoCompletionReplaceWord(false);
@@ -228,7 +229,6 @@ QWidget* MainWindow::createTextEdit()
 
     lex->setStylePreprocessor(true);
 
-    // Bracket matching
     sci->setBraceMatching(QsciScintilla::SloppyBraceMatch);
     sci->setCaretLineVisible(false);
 
@@ -253,13 +253,13 @@ QWidget* MainWindow::createTextEdit()
     lex->setColor(Theme.commentColor, 2);
     lex->setColor(Theme.commentColor, 1);
 
-    commentFont.setItalic(Theme.commentItalic);
-    lex->setFont(commentFont, 2);
-    lex->setFont(commentFont, 1);
-    lex->setFont(standardFont, 11);
-    lex->setFont(standardFont, 10);
-    lex->setFont(standardFont, 5);
-    lex->setFont(standardFont, 4);
+    (*commentFont).setItalic(Theme.commentItalic);
+    lex->setFont(*commentFont, 2);
+    lex->setFont(*commentFont, 1);
+    lex->setFont(*standardFont, 11);
+    lex->setFont(*standardFont, 10);
+    lex->setFont(*standardFont, 5);
+    lex->setFont(*standardFont, 4);
 
     sci->setEdgeColor(Theme.foreground);
     sci->setCaretForegroundColor(Theme.caretColor);
@@ -269,7 +269,7 @@ QWidget* MainWindow::createTextEdit()
     lex->setPaper(Theme.background);
     sci->setMarginsForegroundColor(Theme.marginForeground);
     sci->setMarginsBackgroundColor(Theme.marginColor);
-    sci->setMarginsFont(standardFont);
+    sci->setMarginsFont(*standardFont);
 
     sci->SendScintilla(QsciScintilla::SCI_SETFOLDMARGINCOLOUR, MARGIN_SCRIPT_FOLD_INDEX, Theme.marginColor);
     sci->SendScintilla(QsciScintilla::SCI_SETFOLDMARGINHICOLOUR, MARGIN_SCRIPT_FOLD_INDEX, Theme.marginColor);
@@ -447,6 +447,11 @@ void MainWindow::openTemplateWindow()
     templateWindow->show();
 }
 
+void MainWindow::openScriptGenerator()
+{
+    scriptGenWindow->show();
+}
+
 void MainWindow::toggleDRPC()
 {
     discord->Toggle();
@@ -540,6 +545,10 @@ void MainWindow::createActions()
     templateAct->setStatusTip(tr("Open template's window"));
     connect(templateAct, SIGNAL(triggered()), this, SLOT(openTemplateWindow()));
 
+    generatorAct = new QAction(tr("Generate Script..."), this);
+    generatorAct->setStatusTip(tr("Open Script Generator window"));
+    connect(generatorAct, SIGNAL(triggered()), this, SLOT(openScriptGenerator()));
+
     discordRPCAct = new QAction(tr("Toggle RPC"), this);
     discordRPCAct->setStatusTip(tr("Enable or Disable DiscordRPC"));
     discordRPCAct->setCheckable(true);
@@ -570,6 +579,7 @@ void MainWindow::createMenus()
     editMenu->addSeparator();
     editMenu->addAction(prefAct);
     editMenu->addAction(templateAct);
+    editMenu->addAction(generatorAct);
 
     menuBar()->addSeparator();
 
@@ -625,12 +635,8 @@ void MainWindow::writeSettings()
 bool MainWindow::maybeSave(int index)
 {
     if (tabControl->widget(index)->isWindowModified()) {
-        QMessageBox msgBox;
-        msgBox.setText("The document has been modified.");
-        msgBox.setInformativeText("Do you want to save your changes?");
-        msgBox.setStandardButtons(QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel);
-        msgBox.setDefaultButton(QMessageBox::Save);
-        msgBox.setIcon(QMessageBox::Warning);
+        QMessageBox msgBox("Constellation Code", "The document has been modified.\n\nDo you want to save your changes?", QMessageBox::Warning,
+                            QMessageBox::Save, QMessageBox::Discard, QMessageBox::Cancel);
         msgBox.deleteLater();
         int ret = msgBox.exec();
 
@@ -724,4 +730,8 @@ void MainWindow::insertText(const QString &text)
     textEdit->insert(text);
 }
 
+MainWindow *MainWindow::getInstance()
+{
+    return _instance;
+}
 

@@ -5,6 +5,7 @@
 #include "csharpapi.h"
 #include "settingswindow.h"
 #include "templatewindow.h"
+#include "scriptgenwindow.h"
 
 class QAction;
 class QMenu;
@@ -13,16 +14,17 @@ class QsciAbstractAPIs;
 class list;
 class Discord;
 class QSharedMemory;
+class ScriptGenWindow;
 
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
+
 public:
-    MainWindow(char **argv);
+    MainWindow();
+    static MainWindow *getInstance();
     void insertText(const QString &text);
-    QFont standardFont;
-    QFont commentFont;
     struct ThemeStructure {
            int mouseSelection[4];
            QColor caretLineColor;
@@ -43,14 +45,17 @@ public:
            short caretWidth;
            QColor numColor;
     };
-    ThemeStructure Theme; 
+    ThemeStructure Theme;
     void loadFile(const QString &fileName = 0);
-    void openByProtocol();
+    QString *basePath;
 
 
+public slots:
+    void openByProtocol(int instanceId, QByteArray message);
 
 protected:
     void closeEvent(QCloseEvent *event);
+
 
 private slots:
     void newFile();
@@ -61,6 +66,7 @@ private slots:
     void documentWasModified();
     void openSettingsWindow();
     void openTemplateWindow();
+    void openScriptGenerator();
     void onTabChanged();
     void onTabClose(int index);
     void toggleDRPC();
@@ -85,9 +91,10 @@ private:
     bool saveFile(const QString &fileName = 0, int index = 0);
     void setCurrentFile(const QString &fileName);
     QString strippedName(const QString &fullFileName);
-    QWidget* createTextEdit();
+    QWidget *createTextEdit();
     SettingsWindow *settingsWindow;
     TemplateWindow *templateWindow;
+    ScriptGenWindow *scriptGenWindow;
 
     QsciScintilla *textEdit;
     QTabWidget *tabControl;
@@ -112,11 +119,11 @@ private:
     QAction *aboutQtAct;
     QAction *prefAct;
     QAction *templateAct;
+    QAction *generatorAct;
     QAction *discordRPCAct;
-
     Discord *discord;
-
-    char **args;
+    QFont *standardFont;
+    QFont *commentFont;
 
 };
 
