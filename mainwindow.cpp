@@ -74,7 +74,7 @@ void MainWindow::onTabChanged()
         if(!textEdit->objectName().isEmpty()) {
             setWindowTitle(tr("%1[*] - Constellation Code").arg(strippedName(textEdit->objectName())));
         } else {
-            setWindowTitle(tr("New File[*] - %2").arg(tr("Constellation Code")));
+            setWindowTitle(tr("New File[*] - Constellation Code"));
         }
         setWindowModified(tabControl->currentWidget()->isWindowModified());
     }
