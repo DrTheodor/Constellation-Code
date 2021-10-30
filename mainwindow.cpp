@@ -4,11 +4,9 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QFileDialog>
-#include <QIcon>
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
-#include <QPoint>
 #include <QSettings>
 #include <QSize>
 #include <QStatusBar>
@@ -74,13 +72,15 @@ void MainWindow::onTabChanged()
     textEdit = (QsciScintilla*)tabControl->currentWidget();
     if(textEdit != nullptr) {
         if(!textEdit->objectName().isEmpty()) {
-            setWindowTitle(tr("%1[*] - %2").arg(strippedName(textEdit->objectName())).arg(tr("Constellation Code")));
+            setWindowTitle(tr("%1[*] - Constellation Code").arg(strippedName(textEdit->objectName())));
         } else {
             setWindowTitle(tr("New File[*] - %2").arg(tr("Constellation Code")));
         }
         setWindowModified(tabControl->currentWidget()->isWindowModified());
     }
 }
+
+
 
 void MainWindow::openByProtocol(int instanceId, QByteArray message)
 {
@@ -90,12 +90,16 @@ void MainWindow::openByProtocol(int instanceId, QByteArray message)
             if(message == tabControl->widget(i)->objectName()) {
                 createTab = false;
                 tabControl->setCurrentIndex(i);
+                onTabChanged();
                 break;
             }
         }
         if(createTab) {
             loadFile(message);
         }
+
+        this->raise();
+        this->show();
     }
 }
 
@@ -683,27 +687,25 @@ void MainWindow::loadFile(const QString &fileName)
 
 bool MainWindow::saveFile(const QString &fileName, int index)
 {
-    QsciScintilla *sci = (QsciScintilla*)tabControl->widget(index);
     if(!fileName.isEmpty()) {
         QFile file(fileName);
         if (!file.open(QFile::WriteOnly)) {
             QMessageBox::warning(this, tr("Constellation Code"),
                                  tr("Cannot write file %1:\n%2.")
-                                 .arg(fileName)
-                                 .arg(file.errorString()));
+                                 .arg(fileName, file.errorString()));
             return false;
         }
 
         QTextStream out(&file);
         QApplication::setOverrideCursor(Qt::WaitCursor);
-        out << sci->text();
+        out << textEdit->text();
         QApplication::restoreOverrideCursor();
 
-        tabControl->widget(index)->setObjectName(fileName);
+        textEdit->setObjectName(fileName);
         statusBar()->showMessage(tr("File saved"), 2000);
-        tabControl->widget(index)->setWindowModified(false);
+        textEdit->setWindowModified(false);
 
-        setWindowTitle(tr("%1[*] - %2").arg(strippedName(textEdit->objectName())).arg(tr("Constellation Code")));
+        setWindowTitle(tr("%1[*] - Constellation Code").arg(strippedName(textEdit->objectName())));
         setWindowModified(false);
         return true;
     } else {
@@ -711,8 +713,8 @@ bool MainWindow::saveFile(const QString &fileName, int index)
         if (file.isEmpty())
             return false;
         tabControl->setTabText(index, strippedName(file));
-        sci->setObjectName(file);
-        tabControl->widget(index)->setWindowModified(false);
+        textEdit->setObjectName(file);
+        textEdit->setWindowModified(false);
 
         setWindowTitle(tr("New File[*] - %2").arg(tr("Constellation Code")));
         setWindowModified(false);
